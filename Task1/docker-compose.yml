@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  postgres-1:
+    image: postgres:latest
+    container_name: postgres-1
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: database1
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata1:/var/lib/postgresql/data
+
+  postgres-2:
+    image: postgres:latest
+    container_name: postgres-2
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: database2
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata2:/var/lib/postgresql/data
+
+  airflow:
+    image: apache/airflow:latest
+    container_name: airflow
+    restart: always
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://user:password@postgres-1/database1
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./airflow:/opt/airflow
+    depends_on:
+      - postgres-1
+      - postgres-2
+    entrypoint: ["/bin/bash", "-c", "airflow db init && sleep 10 && airflow users create --username admin --password password --firstname Admin --lastname User --role Admin --email admin@example.com && airflow webserver"]
+
+volumes:
+  pgdata1:
+  pgdata2:
